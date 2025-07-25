@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>P2P WebRTC – All-in-One LAN Connect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; background: #20262c; color: #eee; margin: 0; padding: 0; }
+    .container { max-width: 500px; margin: 30px auto; background: #2e3640; border-radius: 13px; box-shadow: 0 2px 14px #000; padding: 25px; }
+    h2 { text-align: center; }
+    textarea, input { width: 100%; box-sizing: border-box; background: #2e2e2e; color: #caf; border: 1px solid #666; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 1rem; }
+    button { background: #4ad991; color: #20262c; border: none; border-radius: 6px; padding: 10px 18px; font-size: 1rem; cursor: pointer; margin: 8px 3px 8px 0; }
+    button:disabled { background: #333; color: #555; }
+    .row { margin-top: 20px; }
+    #qr { display: block; margin: 12px auto; }
+    .chat { margin: 14px 0; background: #263042; border-radius: 6px; padding: 10px; min-height: 80px; max-height: 250px; overflow-y: auto; }
+    .small { font-size: 0.95em; color: #49b; margin-top: 2px; }
+    .divider { border-bottom: 1px solid #333; margin: 15px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>P2P WebRTC LAN Connector</h2>
+    <div class="divider"></div>
+    <button id="btnHost">Create Connection (Host)</button>
+    <button id="btnGuest">Join Connection (Guest)</button>
+
+    <div id="hostArea" style="display:none">
+      <p class="small">Share this code (or QR) with your friend.<br>Stay on this screen after copying.</p>
+      <textarea id="hostOffer" readonly rows="5"></textarea>
+      <div id="qr"></div>
+      <button id="copyOffer">Copy Code</button>
+      <p class="small">After your friend joins, paste their answer below:</p>
+      <textarea id="guestAnswer" rows="3" placeholder="Paste answer here"></textarea>
+      <button id="processAnswer">Confirm Answer</button>
+      <p id="hostStatus" class="small"></p>
+    </div>
+
+    <div id="guestArea" style="display:none">
+      <p class="small">Paste or scan the host code below:</p>
+      <textarea id="inputOffer" rows="5" placeholder="Paste host code here"></textarea>
+      <button id="btnScan">Scan QR Code</button>
+      <video id="scanVideo" width="250" style="display:none"></video>
+      <button id="connectBtn">Respond & Connect</button>
+      <textarea id="guestResponse" readonly rows="4" style="margin-top:6px;" placeholder="Send this code to the host"></textarea>
+      <button id="copyResponse">Copy Response</button>
+      <p id="guestStatus" class="small"></p>
+    </div>
+
+    <div id="chatArea" style="display:none">
+      <h3>🔗 Connected! (LAN/WebRTC)</h3>
+      <div class="chat" id="chatBox"></div>
+      <input id="chatMsg" placeholder="Type message…" autocomplete="off">
+      <button id="sendMsg">Send</button>
+    </div>
+
+    <div id="footer" class="row small" style="text-align:center">
+      For demo: devices must be on the same LAN Wi-Fi. <br/> No server, no internet required after handshake.
+    </div>
+  </div>
+  <!-- External QR code gen (client-only, safe for LAN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script>
+    // --- WebRTC LAN Peer Connection (minimal, unencrypted demo data channel) ---
+    let pc, dc, isHost = false;
+    const config = { iceServers: [{urls: "stun:stun.l.google.com:19302"}] }; // needed for ICE/NAT, works over LAN
+    let chatBox = document.getElementById('chatBox');
+
+    // Helper
+    function el(id){ return document.getElementById(id); }
+    function scrollChat(){ chatBox.scrollTop = chatBox.scrollHeight; }
+
+    // UI
+    el('btnHost').onclick = () => {
+      isHost = true;
+      el('hostArea').style.display = '';
+      el('btnHost').style.display = 'none';
+      el('btnGuest').style.display = 'none';
+      setupHost();
+    };
+    el('btnGuest').onclick = () => {
+      isHost = false;
+      el('guestArea').style.display = '';
+      el('btnGuest').style.display = 'none';
+      el('btnHost').style.display = 'none';
+    };
+
+    // HOST LOGIC
+    function setupHost() {
+      pc = new RTCPeerConnection(config);
+      dc = pc.createDataChannel('demo');
+      wireDataChannel();
+      pc.onicecandidate = e=>{
+        if(!e.candidate){
+          // ICE gathering done; show the offer
+          let code = btoa(JSON.stringify(pc.localDescription));
+          el('hostOffer').value = code;
+          genQR(code);
+        }
+      };
+      pc.createOffer().then(o=>pc.setLocalDescription(o));
+    }
+
+    el('copyOffer').onclick = ()=>{ el('hostOffer').select(); document.execCommand('copy'); };
+    el('processAnswer').onclick = async ()=>{
+      el('hostStatus').textContent='Connecting...';
+      try {
+        let sdp = JSON.parse(atob(el('guestAnswer').value.trim()));
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        el('hostStatus').textContent='Connected! (data channel open after green message)';
+      } catch {
+        el('hostStatus').textContent='Invalid or incomplete answer.';
+      }
+    };
+
+    // GUEST LOGIC
+    el('connectBtn').onclick = async ()=>{
+      el('guestStatus').textContent='Processing...';
+      try {
+        let offer = JSON.parse(atob(el('inputOffer').value.trim()));
+        pc = new RTCPeerConnection(config);
+        pc.ondatachannel = e=>{ dc = e.channel; wireDataChannel(); };
+        pc.onicecandidate = e=>{
+          if(!e.candidate){
+            // Send response
+            let code = btoa(JSON.stringify(pc.localDescription));
+            el('guestResponse').value = code;
+          }
+        };
+        await pc.setRemoteDescription(offer);
+        let answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        el('guestStatus').textContent='Copy code above and send to host!';
+      } catch {
+        el('guestStatus').textContent='Error: invalid code?';
+      }
+    };
+    el('copyResponse').onclick = ()=>{ el('guestResponse').select(); document.execCommand('copy'); };
+
+    // -- CHAT --
+    el('sendMsg').onclick = ()=> {
+      if (dc && dc.readyState === 'open') {
+        let msg = el('chatMsg').value;
+        showMsg('You', msg);
+        dc.send(msg);
+        el('chatMsg').value = '';
+      }
+    };
+    el('chatMsg').addEventListener('keypress',e=>{if(e.key==='Enter')el('sendMsg').click();});
+
+    // DataChannel Responders
+    function wireDataChannel() {
+      dc.onopen = ()=>{
+        el('hostArea').style.display = 'none';
+        el('guestArea').style.display = 'none';
+        el('chatArea').style.display = '';
+        showMsg('System','🔐 Secure LAN channel is ready!');
+      };
+      dc.onmessage = e=>showMsg('Peer',e.data);
+    }
+    function showMsg(sender, msg){
+      let d = document.createElement('div');
+      d.innerHTML = '<strong>'+sender+':</strong> ' + msg;
+      chatBox.appendChild(d);
+      scrollChat();
+    }
+
+    // --- QR Functions (for easy phone-to-phone handshake) ---
+    function genQR(txt){
+      let q = new QRious({ element:el('qr'), value:txt, size:180, background:'#fcf2', foreground:'#4ad991' });
+    }
+    el('btnScan').onclick = ()=>{
+      // Open camera for scanning (guest)
+      let video = el('scanVideo');
+      video.style.display = '';
+      video.setAttribute('autoplay',true);
+      el('btnScan').disabled = true;
+      navigator.mediaDevices.getUserMedia({video: {facingMode:'environment'}}).then(stream=>{
+        video.srcObject=stream;
+        video.play();
+        const canvas = document.createElement('canvas');
+        const check = ()=> {
+          if(video.readyState===video.HAVE_ENOUGH_DATA){
+            canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+            let ctx = canvas.getContext('2d');
+            ctx.drawImage(video,0,0,canvas.width,canvas.height);
+            let img = ctx.getImageData(0,0,canvas.width,canvas.height);
+            let code = jsQR(img.data, img.width, img.height);
+            if(code){
+              el('inputOffer').value = code.data;
+              stream.getTracks().forEach(t=>t.stop()); video.style.display='none';
+              el('btnScan').disabled = false;
+            } else setTimeout(check,300);
+          } else setTimeout(check,300);
+        }; check();
+      });
+    };
+  </script>
+</body>
+</html>
