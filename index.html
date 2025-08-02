@@ -1,150 +1,2040 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>PDF Splitter</title>
-<style>
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    margin: 0;
-    padding: 1em;
-    background: #f9f9f9;
-    color: #333;
-  }
-  h1 {
-    text-align: center;
-    margin-bottom: 1em;
-  }
-  label {
-    display: block;
-    margin-top: 1em;
-    font-weight: 600;
-  }
-  input[type="file"] {
-    margin-top: 0.5em;
-  }
-  input[type="number"] {
-    width: 100%;
-    padding: 0.5em;
-    font-size: 1em;
-    margin-top: 0.5em;
-  }
-  button {
-    margin-top: 1.5em;
-    width: 100%;
-    padding: 1em;
-    font-size: 1.2em;
-    background-color: #007bff;
-    border: none;
-    color: #fff;
-    border-radius: 0.3em;
-    cursor: pointer;
-  }
-  button:disabled {
-    background-color: #999;
-    cursor: not-allowed;
-  }
-  #results {
-    margin-top: 1.5em;
-  }
-  .file-link {
-    display: block;
-    margin: 0.5em 0;
-    background: #fff;
-    padding: 0.5em;
-    border-radius: 0.3em;
-    box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    word-break: break-word;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>VoxOS V - Enhanced Core</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Enhanced UI with cleaner design and fixed themes */
+    :root {
+      --accent: #ff6f3c;
+      --accent-dark: #d13c00;
+      --accent-light: #ffd8c9;
+      --bg: linear-gradient(270deg, #ffb347, #ff6f3c, #845ec2, #ffb347);
+      --window-bg: rgba(255,255,255,0.98);
+      --window-blur: blur(18px);
+      --window-border: rgba(224, 179, 255, 0.3);
+      --taskbar-bg: rgba(255, 247, 240, 0.9);
+      --taskbar-height: 56px;
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      --icon-size: 58px;
+      --transition: 0.15s cubic-bezier(.7,.2,.23,1.1);
+      --text: #23232a;
+      --text-light: #5a5a5f;
+      --input-bg: #fff7f0;
+      --input-border: #e0b3ff;
+      --input-text: #23232a;
+      --clock-dark: #eaf2fb;
+      --menu-bg: rgba(255, 255, 255, 0.95);
+      --menu-border: rgba(224, 179, 255, 0.3);
+      --menu-scrollbar: #e0b3ff;
+      --blur: blur(24px);
+      --file-bg: #fff7f0;
+      --file-border: #e5e8fa;
+      --success: #4caf50;
+      --error: #e53935;
+      --warning: #ff9800;
+    }
+
+    body.dark {
+      --text: #f0f0f0;
+      --text-light: #a0a0a5;
+      --window-bg: rgba(30, 30, 38, 0.95);
+      --window-border: rgba(90, 70, 120, 0.4);
+      --taskbar-bg: rgba(25, 25, 35, 0.9);
+      --input-bg: rgba(50, 50, 60, 0.8);
+      --input-border: rgba(120, 90, 180, 0.4);
+      --clock-dark: #1e1e26;
+      --menu-bg: rgba(30, 30, 38, 0.95);
+      --menu-border: rgba(90, 70, 120, 0.4);
+      --menu-scrollbar: #4a4a5c;
+      --file-bg: rgba(50, 50, 60, 0.8);
+      --file-border: rgba(90, 70, 120, 0.4);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    body.light {
+      --text: #23232a;
+      --text-light: #5a5a5f;
+      --window-bg: #ffffff;
+      --window-border: rgba(200, 200, 220, 0.5);
+      --taskbar-bg: rgba(245, 245, 250, 0.95);
+      --input-bg: #f8f8fa;
+      --input-border: #d0d0e0;
+      --clock-dark: #f0f5ff;
+      --menu-bg: #ffffff;
+      --menu-border: rgba(200, 200, 220, 0.5);
+      --menu-scrollbar: #d0d0e0;
+      --file-bg: #f8f8fa;
+      --file-border: #e0e0f0;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    }
+
+    @keyframes voxwall {
+      0% { background-position: 0% 50%;}
+      50% { background-position: 100% 50%;}
+      100% { background-position: 0% 50%;}
+    }
+    #desktop {
+      animation: voxwall 24s ease-in-out infinite;
+      background: var(--bg);
+      background-size: 400% 400%;
+    }
+    html { font-size: 1em; }
+    body { 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Inter', 'Segoe UI', 'Roboto', Arial, sans-serif; 
+      background: var(--bg); 
+      min-height: 100vh; 
+      overflow: hidden; 
+      transition: background 0.7s, font-size 0.2s; 
+      color: var(--text);
+    }
+    .desktop-icon { 
+      position: absolute; 
+      width: 110px; 
+      text-align: center; 
+      cursor: pointer; 
+      user-select: none; 
+      transition: transform .15s, box-shadow .15s; 
+      will-change: transform; 
+      animation: fadeInUp 0.4s;
+    }
+    .desktop-icon:active { transform: scale(0.95);}
+    .desktop-icon .icon-img { 
+      width: var(--icon-size); 
+      height: var(--icon-size); 
+      margin: 0 auto 8px; 
+      border-radius: 14px; 
+      background: var(--input-bg); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 2.3rem; 
+      box-shadow: var(--shadow); 
+      transition: all .14s;
+    }
+    .desktop-icon:hover .icon-img { 
+      background: var(--accent); 
+      color: #fff; 
+      transform: scale(1.10);
+    }
+    .desktop-icon .icon-label { 
+      color: var(--text); 
+      font-size: 13.5px; 
+      word-break: break-word;
+      padding: 4px 0;
+      background: rgba(0,0,0,0.1);
+      border-radius: 6px;
+      margin-top: -5px;
+    }
+    .taskbar { 
+      position: fixed; 
+      left: 0; 
+      right: 0; 
+      bottom: 0; 
+      height: var(--taskbar-height); 
+      background: var(--taskbar-bg); 
+      display: flex; 
+      align-items: center; 
+      z-index: 1000; 
+      box-shadow: 0 -2px 24px rgba(0, 0, 0, 0.05); 
+      padding: 0 16px; 
+      border-top: 1px solid var(--window-border);
+      backdrop-filter: var(--blur);
+    }
+    #start-btn { 
+      background: var(--accent); 
+      color: #fff; 
+      border: none; 
+      border-radius: var(--radius); 
+      font-size: 1.1rem; 
+      font-weight: 600; 
+      padding: 8px 22px; 
+      margin-right: 18px; 
+      cursor: pointer; 
+      box-shadow: 0 2px 8px rgba(255, 111, 60, 0.15); 
+      transition: background .14s, transform .1s;
+    }
+    #start-btn:hover { 
+      background: var(--accent-dark); 
+      transform: translateY(-1px);
+    }
+    #taskbar-apps { 
+      flex: 1; 
+      display: flex; 
+      gap: 7px;
+      padding: 0 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    #taskbar-apps::-webkit-scrollbar { display: none; }
+    .taskbar-app { 
+      background: var(--input-bg); 
+      color: var(--text); 
+      border: none; 
+      border-radius: var(--radius); 
+      padding: 9px 20px; 
+      font-size: 15px; 
+      cursor: pointer; 
+      transition: background .14s, color .14s, box-shadow .14s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+    .taskbar-app.active, .taskbar-app:focus { 
+      background: var(--accent); 
+      color: #fff; 
+      box-shadow: 0 2px 10px rgba(255, 111, 60, 0.2);
+    }
+    #system-tray { 
+      display: flex; 
+      align-items: center; 
+      gap: 15px; 
+      color: var(--text-light); 
+      font-size: 15px;
+    }
+    #system-time { 
+      font-variant-numeric: tabular-nums; 
+      font-weight: 600;
+      padding: 5px 10px;
+      background: var(--input-bg);
+      border-radius: var(--radius);
+    }
+    #tray-theme { 
+      cursor:pointer; 
+      font-size: 1.2em;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background .2s;
+    }
+    #tray-theme:hover { 
+      background: var(--input-bg);
+    }
+    #start-menu {
+      position: fixed;
+      left: 18px;
+      bottom: calc(var(--taskbar-height) + 13px);
+      width: 370px;
+      background: var(--menu-bg);
+      color: var(--text);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 18px 14px 18px;
+      display: none;
+      z-index: 20000;
+      border: 1px solid var(--menu-border);
+      max-height: 62vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--menu-scrollbar) var(--menu-bg);
+      animation: fadeInUp 0.5s;
+      backdrop-filter: var(--blur);
+    }
+    #start-menu::-webkit-scrollbar {
+      width: 6px;
+    }
+    #start-menu::-webkit-scrollbar-thumb {
+      background-color: var(--menu-scrollbar);
+      border-radius: 3px;
+    }
+    #start-menu.active { display: block;}
+    #start-menu h2 { 
+      margin: 0 0 15px 0; 
+      font-size: 1.32em; 
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--menu-border);
+    }
+    #start-menu .menu-app { 
+      padding: 10px 14px; 
+      cursor: pointer; 
+      border-radius: var(--radius); 
+      font-size: 1.09em; 
+      display: flex; 
+      align-items: center; 
+      gap: 13px; 
+      transition: background .14s, color .14s, transform .14s;
+      margin: 4px 0;
+    }
+    #start-menu .menu-app:hover { 
+      background: var(--accent); 
+      color: #fff;
+    }
+    #start-menu hr { 
+      border: none; 
+      border-top: 1px solid var(--menu-border); 
+      margin: 10px 0;
+    }
+    .window { 
+      position: absolute; 
+      min-width: 340px; 
+      min-height: 180px; 
+      max-width: 100vw; 
+      max-height: 92vh; 
+      background: var(--window-bg); 
+      border-radius: var(--radius); 
+      box-shadow: var(--shadow); 
+      overflow: hidden; 
+      display: flex; 
+      flex-direction: column; 
+      opacity: 0; 
+      pointer-events: none; 
+      z-index: 10; 
+      border: 1px solid var(--window-border); 
+      backdrop-filter: var(--window-blur); 
+      transition: box-shadow 0.16s, opacity 0.16s, width 0.3s, height 0.3s, left 0.3s, top 0.3s, border-radius 0.3s; 
+      animation: fadeInUp 0.36s cubic-bezier(.4,2,.6,1); 
+      box-sizing: border-box;
+    }
+    .window.active { 
+      opacity: 1; 
+      pointer-events: all; 
+      z-index: 10000;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+    .window-header { 
+      background: linear-gradient(90deg, var(--accent-light) 60%, var(--accent-light) 100%); 
+      color: var(--accent-dark); 
+      padding: 0 16px; 
+      height: 48px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      cursor: move; 
+      font-weight: 600; 
+      font-size: 1.13em; 
+      border-top-left-radius: var(--radius); 
+      border-top-right-radius: var(--radius); 
+      user-select: none; 
+      border-bottom: 1px solid var(--window-border);
+    }
+    .window-controls { 
+      display: flex; 
+      gap: 6px;
+    }
+    .window-control {
+      width: 28px; 
+      height: 28px;
+      border: none; 
+      border-radius: 8px;
+      font-size: 1.3em;
+      color: var(--accent-dark);
+      background: none;
+      cursor: pointer;
+      transition: background 0.13s, color 0.13s;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+    }
+    .window-control:hover { 
+      background: var(--accent); 
+      color: #fff;
+    }
+    .window-content { 
+      flex: 1; 
+      padding: 0; 
+      background: transparent; 
+      font-size: 1.01em; 
+      overflow: auto; 
+      display: flex; 
+      flex-direction: column;
+    }
+    .window-resizer { 
+      position: absolute; 
+      right: 0; 
+      bottom: 0; 
+      width: 24px; 
+      height: 24px; 
+      cursor: se-resize; 
+      z-index: 2; 
+      opacity: 0.6;
+    }
+    .window[fullscreen="true"] { 
+      left: 0 !important; 
+      top: 0 !important; 
+      width: 100vw !important; 
+      height: calc(100vh - var(--taskbar-height)) !important; 
+      border-radius: 0; 
+      margin: 0 !important; 
+      box-sizing: border-box; 
+      transition: all 0.24s cubic-bezier(.4,2,.6,1);
+    }
+    @keyframes fadeInUp { 
+      from { 
+        opacity: 0; 
+        transform: scale(0.95) translateY(50px);
+      } 
+      to   { 
+        opacity: 1; 
+        transform: scale(1) translateY(0);
+      }
+    }
+    .nexa-btn { 
+      background: var(--accent); 
+      color: #fff; 
+      border: none; 
+      border-radius: var(--radius); 
+      padding: 8px 18px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      transition: background 0.13s, transform 0.1s; 
+      font-size: 1em;
+    }
+    .nexa-btn:hover { 
+      background: var(--accent-dark); 
+      transform: translateY(-1px);
+    }
+    .nexa-btn.secondary {
+      background: var(--input-bg);
+      color: var(--text);
+    }
+    .nexa-input, .nexa-select { 
+      background: var(--input-bg); 
+      color: var(--input-text); 
+      border: 1px solid var(--input-border); 
+      border-radius: 8px; 
+      font-size: 1.04em; 
+      padding: 8px 14px; 
+      margin-right: 8px; 
+      outline: none; 
+      transition: border 0.12s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .nexa-input:focus, .nexa-select:focus { 
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 0 2px rgba(255, 111, 60, 0.2);
+    }
+    .nexa-app-frame {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .nexa-toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--window-border);
+      background: var(--input-bg);
+    }
+    .nexa-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .nexa-section {
+      background: var(--input-bg);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+    .nexa-section h3 {
+      margin-top: 0;
+      color: var(--accent-dark);
+      border-bottom: 1px solid var(--input-border);
+      padding-bottom: 8px;
+    }
+    #lockscreen {
+      display: none;
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh;
+      z-index: 99999;
+      align-items: center; 
+      justify-content: center;
+      font-family: 'Inter', 'Segoe UI', 'Roboto', Arial, sans-serif;
+      flex-direction: column;
+      text-align: center;
+      background: rgba(0,0,0,0.38);
+      backdrop-filter: var(--blur);
+      animation: fadeInUp 0.8s;
+    }
+    #lockscreen .lock-time { 
+      font-size: 3.2em; 
+      font-weight: 600; 
+      margin-bottom: 0.2em; 
+      letter-spacing: 2px;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    #lockscreen .lock-date { 
+      font-size: 1.2em; 
+      margin-bottom: 1.5em;
+      color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    #lockscreen input { 
+      font-size:1.1em;
+      padding:10px 16px;
+      border-radius:var(--radius);
+      border:1px solid #888;
+      background: rgba(255,255,255,0.9);
+      width: 200px;
+    }
+    #lockscreen button { 
+      margin-left:10px; 
+      font-size:1em;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    #lockscreen .lock-form { 
+      margin-top: 1.5em; 
+      display: flex;
+      justify-content: center;
+    }
+    #lockscreen .lock-error { 
+      color:var(--error);
+      margin-top:12px;
+      font-size:0.9em;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 16px;
+      border-radius: var(--radius);
+    }
+    
+    /* Unified dialog system */
+    #dialog {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.4);
+      z-index: 20000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .dialog-box {
+      background: var(--window-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-width: 320px;
+      max-width: 90vw;
+      border: 1px solid var(--window-border);
+      overflow: hidden;
+      animation: fadeInUp 0.3s;
+    }
+    .dialog-header {
+      padding: 16px 20px;
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      font-weight: 600;
+      font-size: 1.2em;
+      border-bottom: 1px solid var(--window-border);
+    }
+    .dialog-content {
+      padding: 20px;
+      color: var(--text);
+    }
+    .dialog-actions {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      border-top: 1px solid var(--window-border);
+      background: var(--input-bg);
+    }
+    
+    /* Notification system */
+    #notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      background: var(--window-bg);
+      color: var(--text);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--window-border);
+      z-index: 30000;
+      transform: translateX(120%);
+      transition: transform 0.3s;
+      max-width: 320px;
+    }
+    #notification.active {
+      transform: translateX(0);
+    }
+    #notification.success {
+      border-left: 4px solid var(--success);
+    }
+    #notification.error {
+      border-left: 4px solid var(--error);
+    }
+    #notification.warning {
+      border-left: 4px solid var(--warning);
+    }
+    
+    /* File manager styles */
+    .fm-toolbar {
+      display: flex;
+      padding: 12px 16px;
+      gap: 8px;
+      border-bottom: 1px solid var(--window-border);
+      background: var(--input-bg);
+    }
+    .fm-path {
+      padding: 12px 16px;
+      background: var(--input-bg);
+      border-bottom: 1px solid var(--window-border);
+      font-size: 0.95em;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+    }
+    .fm-path span {
+      color: var(--accent-dark);
+      margin-left: 5px;
+    }
+    .fm-content {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+    .fm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 16px;
+    }
+    .fm-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: var(--input-bg);
+      border: 1px solid var(--file-border);
+      cursor: pointer;
+      transition: transform .1s, box-shadow .1s;
+    }
+    .fm-item:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow);
+      background: var(--accent-light);
+    }
+    .fm-item-icon {
+      font-size: 2.5em;
+      margin-bottom: 8px;
+      color: var(--accent-dark);
+    }
+    .fm-item-name {
+      font-size: 0.9em;
+      text-align: center;
+      word-break: break-word;
+      width: 100%;
+    }
+    .fm-context-menu {
+      position: absolute;
+      background: var(--window-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--window-border);
+      z-index: 1000;
+      min-width: 160px;
+      overflow: hidden;
+    }
+    .fm-context-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: background .1s;
+    }
+    .fm-context-item:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+  </style>
 </head>
 <body>
-
-<h1>PDF Splitter</h1>
-
-<label for="pdf-file">Choose PDF file</label>
-<input type="file" id="pdf-file" accept="application/pdf" />
-
-<label for="split-pages">Split after every X pages</label>
-<input type="number" id="split-pages" min="1" placeholder="Enter number of pages" />
-
-<button id="split-btn" disabled>Split PDF</button>
-
-<div id="results"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<div id="desktop"></div>
+<div id="windows-container"></div>
+<div class="taskbar">
+  <button id="start-btn">🪟 Vox</button>
+  <div id="taskbar-apps"></div>
+  <div id="system-tray">
+    <span id="tray-theme" title="Change Theme">🎨</span>
+    <span id="system-time"></span>
+  </div>
+</div>
+<div id="start-menu">
+  <h2>Apps & Tools</h2>
+  <div id="start-menu-apps"></div>
+  <hr>
+  <div class="menu-app" id="signout-btn" style="color:#e53935;font-weight:bold;">⏻ Sign Out</div>
+</div>
+<div id="dialog"><div class="dialog-box"></div></div>
+<div id="notification"></div>
+<div id="lockscreen">
+  <div>
+    <div class="lock-time" id="lock-time"></div>
+    <div class="lock-date" id="lock-date"></div>
+    <form class="lock-form" id="lock-form" autocomplete="off">
+      <input id="lock-pin" type="password" maxlength="16" placeholder="PIN" required>
+      <button class="nexa-btn" type="submit">Unlock</button>
+    </form>
+    <div class="lock-error" id="lock-error"></div>
+  </div>
+</div>
 <script>
-  const fileInput = document.getElementById('pdf-file');
-  const splitInput = document.getElementById('split-pages');
-  const splitBtn = document.getElementById('split-btn');
-  const resultsDiv = document.getElementById('results');
+/* --- VoxOS V: Enhanced Core Logic & Core Apps --- */
+const voxSys = {
+  settings: {
+    theme: "default",
+    accent: "#ff6f3c",
+    wallpaper: "",
+    fontSize: 1,
+    lockPIN: "1234"
+  },
+  apps: [],
+  fs: {"/":{type:"folder",children:{}}},
+  fileAssociations: {}
+};
 
-  let pdfBytes = null;
-
-  // Enable button only when file and valid number input
-  function validateInputs() {
-    const hasFile = fileInput.files.length > 0;
-    const pages = parseInt(splitInput.value, 10);
-    splitBtn.disabled = !(hasFile && pages > 0);
-  }
-
-  fileInput.addEventListener('change', validateInputs);
-  splitInput.addEventListener('input', validateInputs);
-
-  splitBtn.addEventListener('click', async () => {
-    resultsDiv.innerHTML = '';
-    splitBtn.disabled = true;
-    splitBtn.textContent = 'Processing...';
-
-    try {
-      const file = fileInput.files[0];
-      if (!file) throw new Error('No file selected');
-
-      const pagesPerSplit = parseInt(splitInput.value, 10);
-      if (pagesPerSplit < 1) throw new Error('Split pages must be >= 1');
-
-      const arrayBuffer = await file.arrayBuffer();
-      const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer);
-
-      const totalPages = srcPdf.getPageCount();
-      if (pagesPerSplit > totalPages) {
-        throw new Error(`Input split pages (${pagesPerSplit}) exceeds total pages (${totalPages})`);
-      }
-
-      // Split the PDF
-      const downloadLinks = [];
-
-      for (let startPage = 0; startPage < totalPages; startPage += pagesPerSplit) {
-        const endPage = Math.min(startPage + pagesPerSplit, totalPages);
-
-        const newPdf = await PDFLib.PDFDocument.create();
-        const copiedPages = await newPdf.copyPages(srcPdf, [...Array(endPage - startPage).keys()].map(i => i + startPage));
-        copiedPages.forEach((p) => newPdf.addPage(p));
-
-        const pdfBytes = await newPdf.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${file.name.replace(/\.pdf$/i, '')}_part_${Math.floor(startPage / pagesPerSplit) + 1}.pdf`;
-        link.textContent = `Download part ${Math.floor(startPage / pagesPerSplit) + 1} (pages ${startPage+1}-${endPage})`;
-        link.className = 'file-link';
-
-        resultsDiv.appendChild(link);
-      }
-
-    } catch (err) {
-      resultsDiv.textContent = 'Error: ' + err.message;
-      resultsDiv.style.color = 'red';
-    } finally {
-      splitBtn.textContent = 'Split PDF';
-      validateInputs();
+// --- Settings App (Improved) ---
+voxSys.apps.push({
+  id: "settings", 
+  icon: "⚙️", 
+  title: "Settings", 
+  width: "500px", 
+  height: "510px", 
+  singleInstance: true, 
+  deletable: false,
+  code: `const content = document.getElementById(id+'-content');
+  content.innerHTML = \`
+    <div class="nexa-app-frame">
+      <div class="nexa-toolbar">
+        <button class="nexa-btn" id="\${id}-tab-personal">Personalization</button>
+        <button class="nexa-btn" id="\${id}-tab-system">System</button>
+        <button class="nexa-btn" id="\${id}-tab-about">About</button>
+      </div>
+      <div class="nexa-content" id="\${id}-tab-content"></div>
+    </div>
+  \`;
+  
+  function showTab(tab) {
+    const tabContent = document.getElementById(id+'-tab-content');
+    // Update tab buttons
+    document.querySelectorAll('.nexa-toolbar button').forEach(btn => {
+      btn.style.background = '';
+      btn.style.color = '';
+    });
+    const activeBtn = document.getElementById(\`\${id}-tab-\${tab}\`);
+    if (activeBtn) {
+      activeBtn.style.background = 'var(--accent)';
+      activeBtn.style.color = '#fff';
     }
-  });
-</script>
+    
+    if(tab === 'personal') {
+      tabContent.innerHTML = \`
+        <div class="nexa-section">
+          <h3>Appearance</h3>
+          <label style="display:block;margin-bottom:15px;">
+            Accent Color:
+            <input type="color" id="\${id}-accent" value="\${voxSys.settings.accent}" class="nexa-input">
+          </label>
+          
+          <label style="display:block;margin-bottom:15px;">
+            Theme:
+            <select id="\${id}-theme" class="nexa-select">
+              <option value="default">Vox Default</option>
+              <option value="light">Light Mode</option>
+              <option value="dark">Dark Mode</option>
+            </select>
+          </label>
+          
+          <label style="display:block;margin-bottom:15px;">
+            Font Size:
+            <input type="range" id="\${id}-fontsize" min="0.8" max="1.5" step="0.01" value="\${voxSys.settings.fontSize}" class="nexa-input">
+            <span id="\${id}-fontsize-label">\${Math.round(voxSys.settings.fontSize*100)}%</span>
+          </label>
+        </div>
+        
+        <div class="nexa-section">
+          <h3>Wallpaper</h3>
+          <label style="display:block;margin-bottom:15px;">
+            Custom Wallpaper:
+            <input type="file" id="\${id}-wallpaper" accept="image/*" class="nexa-input">
+          </label>
+          <button class="nexa-btn" id="\${id}-resetwall">Reset Wallpaper</button>
+        </div>
+        
+        <div style="font-size:0.95em;color:var(--accent-dark);margin-top:14px;padding:0 10px;">
+          <b>Live Preview:</b> Changes are applied instantly
+        </div>
+      \`;
+      
+      // Event listeners
+      tabContent.querySelector(\`#\${id}-accent\`).oninput = e => { 
+        voxSys.settings.accent = e.target.value; 
+        saveSys(); 
+        applyThemeAndFont(); 
+      };
+      
+      tabContent.querySelector(\`#\${id}-theme\`).value = voxSys.settings.theme;
+      tabContent.querySelector(\`#\${id}-theme\`).onchange = e => { 
+        voxSys.settings.theme = e.target.value; 
+        saveSys(); 
+        applyThemeAndFont(); 
+      };
+      
+      tabContent.querySelector(\`#\${id}-fontsize\`).oninput = e => {
+        let v = +e.target.value;
+        tabContent.querySelector(\`#\${id}-fontsize-label\`).textContent = Math.round(v*100)+'%';
+        voxSys.settings.fontSize = v; 
+        saveSys(); 
+        applyThemeAndFont();
+      };
+      
+      tabContent.querySelector(\`#\${id}-wallpaper\`).onchange = e => {
+        let file = e.target.files[0];
+        if (!file) return;
+        
+        // Check file size
+        if (file.size > 2 * 1024 * 1024) { // 2MB
+          showNotification('Image too large! Max 2MB allowed.', 'error');
+          return;
+        }
+        
+        let reader = new FileReader();
+        reader.onload = ev => { 
+          voxSys.settings.wallpaper = ev.target.result; 
+          saveSys(); 
+          applyThemeAndFont(); 
+          renderDesktop(); 
+        };
+        reader.readAsDataURL(file);
+      };
+      
+      tabContent.querySelector(\`#\${id}-resetwall\`).onclick = () => { 
+        voxSys.settings.wallpaper = ""; 
+        saveSys(); 
+        applyThemeAndFont(); 
+        renderDesktop(); 
+      };
+    }
+    else if(tab === 'system') {
+      tabContent.innerHTML = \`
+        <div class="nexa-section">
+          <h3>Security</h3>
+          <label style="display:block;margin-bottom:15px;">
+            Lock PIN:
+            <input type="password" id="\${id}-pin" class="nexa-input" value="\${voxSys.settings.lockPIN}">
+          </label>
+          <button class="nexa-btn" id="\${id}-save-pin">Save PIN</button>
+        </div>
+        
+        <div class="nexa-section">
+          <h3>System Tools</h3>
+          <button class="nexa-btn" id="\${id}-export">Export OS State</button>
+          <button class="nexa-btn" id="\${id}-import">Import OS State</button>
+        </div>
+        
+        <div class="nexa-section" style="border-color: var(--error);">
+          <h3 style="color: var(--error);">Danger Zone</h3>
+          <button class="nexa-btn" id="\${id}-reset" style="background: var(--error);">Reset VoxOS</button>
+          <p style="color: var(--error);font-size:0.95em;margin-top:10px;">
+            Warning: This will erase all settings, files, and apps!
+          </p>
+        </div>
+      \`;
+      
+      // Event listeners
+      tabContent.querySelector(\`#\${id}-save-pin\`).onclick = () => {
+        let pin = tabContent.querySelector(\`#\${id}-pin\`).value;
+        if (!pin) return showNotification('PIN cannot be empty!', 'error');
+        voxSys.settings.lockPIN = pin; 
+        saveSys();
+        showNotification('PIN updated successfully!', 'success');
+      };
+      
+      tabContent.querySelector(\`#\${id}-reset\`).onclick = () => {
+        showDialog({
+          title: 'Reset VoxOS',
+          msg: 'This will erase all settings, files, and apps. Continue?',
+          ok: 'Reset', 
+          cancel: 'Cancel',
+          onok() { 
+            localStorage.removeItem('voxSys'); 
+            location.reload(); 
+          }
+        });
+      };
+      
+      tabContent.querySelector(\`#\${id}-export\`).onclick = exportSys;
+      tabContent.querySelector(\`#\${id}-import\`).onclick = importSys;
+    }
+    else if(tab === 'about') {
+      tabContent.innerHTML = \`
+        <div class="nexa-section">
+          <h3>VoxOS V</h3>
+          <p style="font-size:1.1em;">A new dawn for your desktop.</p>
+        </div>
+        
+        <div class="nexa-section">
+          <h3>System Information</h3>
+          <p><b>Browser:</b> \${navigator.userAgent}</p>
+          <p><b>Platform:</b> \${navigator.platform}</p>
+          <p><b>Screen:</b> \${window.screen.width}x\${window.screen.height}</p>
+        </div>
+        
+        <div class="nexa-section">
+          <h3>Feedback</h3>
+          <p><b>Open Source:</b> <a href="#" onclick="showNotification('Coming soon!')">GitHub</a></p>
+          <p><b>Support:</b> <a href="#" onclick="showNotification('Email: hello@voxos.com')">Contact Us</a></p>
+        </div>
+      \`;
+    }
+  }
+  
+  // Initialize tabs
+  document.getElementById(\`\${id}-tab-personal\`).onclick = () => showTab('personal');
+  document.getElementById(\`\${id}-tab-system\`).onclick = () => showTab('system');
+  document.getElementById(\`\${id}-tab-about\`).onclick = () => showTab('about');
+  
+  // Show initial tab
+  showTab('personal');`
+});
 
+// --- App Maker App (Fixed) ---
+voxSys.apps.push({
+  id: "app-maker", 
+  icon: "🛠️", 
+  title: "App Maker", 
+  width: "580px", 
+  height: "650px", 
+  singleInstance: true, 
+  deletable: false,
+  code: `const content = document.getElementById(id+'-content');
+  let editingAppId = null;
+  
+  // App Form UI
+  function showAppForm(editApp = null) {
+    const isEdit = !!editApp;
+    editingAppId = isEdit ? editApp.id : null;
+    
+    content.innerHTML = \`
+      <div style="padding:20px;height:100%;display:flex;flex-direction:column;">
+        <h2 style="margin-top:0;">\${isEdit ? 'Edit App' : 'Create New App'}</h2>
+        
+        <div style="flex:1;overflow:auto;padding-right:10px;">
+          <div class="nexa-section">
+            <label style="display:block;margin-bottom:15px;">
+              App Name:
+              <input id="am-name" class="nexa-input" value="\${isEdit ? editApp.title : ''}" placeholder="My Awesome App">
+            </label>
+            
+            <label style="display:block;margin-bottom:15px;">
+              App Icon (emoji/char):
+              <input id="am-icon" class="nexa-input" value="\${isEdit ? editApp.icon : ''}" placeholder="🖥️" maxlength="2">
+            </label>
+          </div>
+          
+          <div class="nexa-section">
+            <div style="display:flex;gap:15px;margin-bottom:15px;">
+              <label style="flex:1;">
+                Width (px):
+                <input id="am-width" class="nexa-input" type="number" value="\${isEdit ? parseInt(editApp.width) : 520}">
+              </label>
+              
+              <label style="flex:1;">
+                Height (px):
+                <input id="am-height" class="nexa-input" type="number" value="\${isEdit ? parseInt(editApp.height) : 340}">
+              </label>
+            </div>
+            
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input id="am-single" type="checkbox" \${isEdit && editApp.singleInstance ? 'checked' : ''}>
+              Single Instance Only
+            </label>
+          </div>
+          
+          <div class="nexa-section">
+            <h3>App Render Code</h3>
+            <textarea id="am-code" class="nexa-input" style="width:100%;height:180px;font-family:monospace;font-size:0.95em;">\${isEdit ? editApp.code : ''}</textarea>
+            
+            <div style="margin-top:15px;font-size:0.95em;color:var(--text-light);">
+              <b>App Code Help:</b>
+              <ul style="padding-left:20px;margin:10px 0;">
+                <li>Use <code>id</code> and <code>arg</code> as parameters</li>
+                <li>Access DOM with <code>document.getElementById(id+'-content')</code></li>
+                <li>You can access <code>voxSys.settings</code> and <code>voxSys.apps</code></li>
+                <li>Example: <code>content.innerHTML = "Hello!";</code></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div style="display:flex;gap:10px;margin-top:15px;">
+          <button class="nexa-btn" id="am-save" style="flex:1;">\${isEdit ? 'Update App' : 'Create App'}</button>
+          <button class="nexa-btn secondary" id="am-cancel" style="flex:1;">Cancel</button>
+        </div>
+      </div>
+    \`;
+    
+    // Event handlers
+    content.querySelector('#am-cancel').onclick = () => showAppList();
+    content.querySelector('#am-save').onclick = saveApp;
+  }
+  
+  // Save app handler
+  function saveApp() {
+    const name = document.querySelector('#am-name').value.trim();
+    const icon = document.querySelector('#am-icon').value.trim() || '📄';
+    const width = document.querySelector('#am-width').value.trim() || "520";
+    const height = document.querySelector('#am-height').value.trim() || "340";
+    const single = document.querySelector('#am-single').checked;
+    const code = document.querySelector('#am-code').value.trim();
+    
+    if (!name) {
+      showNotification('App name is required!', 'error');
+      return;
+    }
+    
+    if (!code) {
+      showNotification('App code is required!', 'error');
+      return;
+    }
+    
+    const appObj = {
+      id: editingAppId || name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now(),
+      icon, 
+      title: name, 
+      width: width + 'px', 
+      height: height + 'px', 
+      singleInstance: single,
+      deletable: true, 
+      code
+    };
+    
+    if (editingAppId) {
+      // Update existing app
+      const index = voxSys.apps.findIndex(a => a.id === editingAppId);
+      if (index !== -1) {
+        voxSys.apps[index] = appObj;
+        showNotification('App updated successfully!', 'success');
+      }
+    } else {
+      // Create new app
+      voxSys.apps.push(appObj);
+      showNotification('App created successfully!', 'success');
+    }
+    
+    saveSys();
+    renderDesktop();
+    renderStartMenu();
+    showAppList();
+  }
+  
+  // App List UI
+  function showAppList() {
+    editingAppId = null;
+    const userApps = voxSys.apps.filter(a => a.deletable !== false);
+    
+    let html = '<div style="padding:20px;height:100%;display:flex;flex-direction:column;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">';
+    html += '<h2 style="margin:0;">Your Apps</h2>';
+    html += '<button class="nexa-btn" id="am-new">+ New App</button>';
+    html += '</div>';
+    
+    if (userApps.length === 0) {
+      html += '<div style="text-align:center;padding:40px 0;color:var(--text-light);">';
+      html += '<p style="font-size:1.2em;">No apps yet</p>';
+      html += '<p>Create your first app to get started!</p>';
+      html += '</div>';
+    } else {
+      html += '<div style="flex:1;overflow:auto;">';
+      userApps.forEach(app => {
+        html += \`
+          <div class="nexa-section" style="margin-bottom:15px;">
+            <div style="display:flex;align-items:center;gap:15px;margin-bottom:10px;">
+              <div style="font-size:2em;">\${app.icon}</div>
+              <div style="flex:1;">
+                <h3 style="margin:0;">\${app.title}</h3>
+                <div style="font-size:0.9em;color:var(--text-light);">ID: \${app.id}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="nexa-btn" id="edit-\${app.id}" style="flex:1;">Edit</button>
+              <button class="nexa-btn" id="open-\${app.id}" style="flex:1;">Open</button>
+              <button class="nexa-btn" id="del-\${app.id}" style="flex:1;background:var(--error);">Delete</button>
+            </div>
+          </div>
+        \`;
+      });
+      html += '</div>';
+    }
+    
+    html += '</div>';
+    content.innerHTML = html;
+    
+    // Event handlers
+    content.querySelector('#am-new').onclick = () => showAppForm();
+    
+    userApps.forEach(app => {
+      content.querySelector('#edit-' + app.id).onclick = () => showAppForm(app);
+      content.querySelector('#open-' + app.id).onclick = () => openApp(app.id);
+      content.querySelector('#del-' + app.id).onclick = () => {
+        showDialog({
+          title: "Delete App",
+          msg: \`Are you sure you want to delete <b>\${app.title}</b>? This action cannot be undone.\`,
+          ok: "Delete", 
+          cancel: "Cancel",
+          onok: () => {
+            voxSys.apps = voxSys.apps.filter(a => a.id !== app.id);
+            saveSys();
+            showAppList();
+            renderDesktop();
+            renderStartMenu();
+            showNotification('App deleted successfully', 'success');
+          }
+        });
+      };
+    });
+  }
+  
+  // Initialize
+  showAppList();`
+});
+
+// --- File Manager App (Enhanced) ---
+voxSys.apps.push({
+  id: "file-manager",
+  icon: "📁",
+  title: "Files",
+  width: "700px",
+  height: "500px",
+  singleInstance: true,
+  deletable: false,
+  code: `const content = document.getElementById(id+'-content');
+  content.innerHTML = \`
+    <div style="height:100%;display:flex;flex-direction:column;">
+      <div class="fm-toolbar">
+        <button class="nexa-btn" id="\${id}-back">⬆️ Up</button>
+        <button class="nexa-btn" id="\${id}-newfolder">📁 New Folder</button>
+        <button class="nexa-btn" id="\${id}-newfile">📄 New File</button>
+      </div>
+      <div class="fm-path" id="\${id}-path">Path: <span>/</span></div>
+      <div class="fm-content" id="\${id}-fm"></div>
+    </div>
+  \`;
+  
+  const fm = document.getElementById(id+'-fm');
+  const pathEl = document.getElementById(id+'-path');
+  let cwd = "/";
+  let contextMenu = null;
+  
+  // Initialize file system
+  if (!voxSys.fs) voxSys.fs = {"/":{type:"folder",children:{}}};
+  
+  // Render file manager
+  function renderFM() {
+    const folder = getFolder(cwd);
+    pathEl.innerHTML = \`Path: <span>\${cwd}</span>\`;
+    
+    let html = '';
+    if (cwd !== "/") {
+      html += \`
+        <div class="fm-grid">
+          <div class="fm-item" id="\${id}-parent">
+            <div class="fm-item-icon">📂</div>
+            <div class="fm-item-name">.. (Parent)</div>
+          </div>
+      \`;
+    } else {
+      html += '<div class="fm-grid">';
+    }
+    
+    const children = Object.entries(folder.children || {});
+    
+    if (children.length === 0) {
+      html += '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-light);">Folder is empty</div>';
+    } else {
+      children.forEach(([name, obj]) => {
+        const isFolder = obj.type === "folder";
+        html += \`
+          <div class="fm-item" id="\${id}-item-\${name}">
+            <div class="fm-item-icon">\${isFolder ? '📁' : '📄'}</div>
+            <div class="fm-item-name">\${name}</div>
+          </div>
+        \`;
+      });
+    }
+    
+    html += '</div>';
+    fm.innerHTML = html;
+    
+    // Add event listeners
+    if (cwd !== "/") {
+      fm.querySelector('#' + id + '-parent').onclick = () => {
+        cwd = cwd.split("/").slice(0, -2).join("/") + "/";
+        if (cwd === "") cwd = "/";
+        renderFM();
+      };
+    }
+    
+    children.forEach(([name, obj]) => {
+      const item = fm.querySelector('#' + id + '-item-' + name);
+      
+      item.onclick = () => {
+        if (obj.type === "folder") {
+          cwd += name + "/";
+          renderFM();
+        } else {
+          // Open file with associated app
+          const extension = name.split('.').pop();
+          const appId = voxSys.fileAssociations[extension] || "text-editor";
+          openApp(appId, { filePath: cwd + name, content: obj.content });
+        }
+      };
+      
+      item.oncontextmenu = (e) => {
+        e.preventDefault();
+        showContextMenu(e, name, obj);
+      };
+    });
+    
+    // Add event listeners for toolbar buttons
+    content.querySelector('#' + id + '-back').onclick = () => {
+      if (cwd !== "/") {
+        cwd = cwd.split("/").slice(0, -2).join("/") + "/";
+        if (cwd === "") cwd = "/";
+        renderFM();
+      }
+    };
+    
+    content.querySelector('#' + id + '-newfolder').onclick = () => {
+      showDialog({
+        title: "New Folder",
+        msg: "Enter folder name:",
+        input: true,
+        defaultValue: "New Folder",
+        ok: "Create", 
+        cancel: "Cancel",
+        onok: (name) => {
+          if (!name) return;
+          const folder = getFolder(cwd);
+          if (folder.children[name]) {
+            showNotification('A folder with that name already exists!', 'error');
+            return;
+          }
+          folder.children[name] = { type: "folder", children: {} };
+          saveSys();
+          renderFM();
+          showNotification('Folder created successfully', 'success');
+        }
+      });
+    };
+    
+    content.querySelector('#' + id + '-newfile').onclick = () => {
+      showDialog({
+        title: "New File",
+        msg: "Enter file name:",
+        input: true,
+        defaultValue: "New File.txt",
+        ok: "Create", 
+        cancel: "Cancel",
+        onok: (name) => {
+          if (!name) return;
+          const folder = getFolder(cwd);
+          if (folder.children[name]) {
+            showNotification('A file with that name already exists!', 'error');
+            return;
+          }
+          folder.children[name] = { type: "file", content: "" };
+          saveSys();
+          renderFM();
+          showNotification('File created successfully', 'success');
+        }
+      });
+    };
+  }
+  
+  // Context menu for file operations
+  function showContextMenu(e, name, obj) {
+    // Remove existing context menu
+    if (contextMenu) contextMenu.remove();
+    
+    contextMenu = document.createElement('div');
+    contextMenu.className = 'fm-context-menu';
+    contextMenu.style.left = e.pageX + 'px';
+    contextMenu.style.top = e.pageY + 'px';
+    
+    let html = '';
+    
+    if (obj.type === "file") {
+      html += \`
+        <div class="fm-context-item" id="\${id}-open-\${name}">📄 Open</div>
+        <div class="fm-context-item" id="\${id}-edit-\${name}">✏️ Edit</div>
+      \`;
+    }
+    
+    html += \`
+      <div class="fm-context-item" id="\${id}-rename-\${name}">✏️ Rename</div>
+      <div class="fm-context-item" id="\${id}-delete-\${name}" style="color:var(--error);">🗑️ Delete</div>
+    \`;
+    
+    contextMenu.innerHTML = html;
+    document.body.appendChild(contextMenu);
+    
+    // Add event listeners
+    if (obj.type === "file") {
+      contextMenu.querySelector('#' + id + '-open-' + name).onclick = () => {
+        const extension = name.split('.').pop();
+        const appId = voxSys.fileAssociations[extension] || "text-editor";
+        openApp(appId, { filePath: cwd + name, content: obj.content });
+        contextMenu.remove();
+      };
+      
+      contextMenu.querySelector('#' + id + '-edit-' + name).onclick = () => {
+        showDialog({
+          title: "Edit File",
+          msg: "File content:",
+          input: true,
+          inputType: "textarea",
+          defaultValue: obj.content || "",
+          ok: "Save", 
+          cancel: "Cancel",
+          onok: (content) => {
+            obj.content = content;
+            saveSys();
+            showNotification('File saved successfully', 'success');
+            contextMenu.remove();
+          }
+        });
+      };
+    }
+    
+    contextMenu.querySelector('#' + id + '-rename-' + name).onclick = () => {
+      showDialog({
+        title: "Rename",
+        msg: "Enter new name:",
+        input: true,
+        defaultValue: name,
+        ok: "Rename", 
+        cancel: "Cancel",
+        onok: (newName) => {
+          if (!newName || newName === name) return;
+          const folder = getFolder(cwd);
+          if (folder.children[newName]) {
+            showNotification('An item with that name already exists!', 'error');
+            return;
+          }
+          folder.children[newName] = obj;
+          delete folder.children[name];
+          saveSys();
+          renderFM();
+          showNotification('Renamed successfully', 'success');
+          contextMenu.remove();
+        }
+      });
+    };
+    
+    contextMenu.querySelector('#' + id + '-delete-' + name).onclick = () => {
+      showDialog({
+        title: "Delete",
+        msg: \`Are you sure you want to delete <b>\${name}</b>? This action cannot be undone.\`,
+        ok: "Delete", 
+        cancel: "Cancel",
+        onok: () => {
+          const folder = getFolder(cwd);
+          delete folder.children[name];
+          saveSys();
+          renderFM();
+          showNotification('Deleted successfully', 'success');
+          contextMenu.remove();
+        }
+      });
+    };
+    
+    // Close context menu when clicking elsewhere
+    setTimeout(() => {
+      document.addEventListener('click', closeContextMenu, { once: true });
+    }, 10);
+  }
+  
+  function closeContextMenu() {
+    if (contextMenu) {
+      contextMenu.remove();
+      contextMenu = null;
+    }
+  }
+  
+  // Helper function to get current folder
+  function getFolder(path) {
+    const parts = path.split("/").filter(Boolean);
+    let cur = voxSys.fs["/"];
+    for (const p of parts) cur = cur.children[p];
+    return cur;
+  }
+  
+  // Initialize
+  renderFM();`
+});
+
+// --- Text Editor App ---
+voxSys.apps.push({
+  id: "text-editor",
+  icon: "📝",
+  title: "Text Editor",
+  width: "600px",
+  height: "500px",
+  singleInstance: false,
+  deletable: false,
+  code: `const content = document.getElementById(id+'-content');
+  let currentFile = null;
+  
+  // Initialize UI
+  content.innerHTML = \`
+    <div style="height:100%;display:flex;flex-direction:column;">
+      <div style="padding:12px 16px;background:var(--input-bg);border-bottom:1px solid var(--window-border);">
+        <span id="\${id}-filename" style="font-weight:bold;color:var(--accent-dark);">Untitled.txt</span>
+      </div>
+      <textarea id="\${id}-editor" style="flex:1;width:100%;padding:15px;box-sizing:border-box;border:none;outline:none;resize:none;background:var(--window-bg);color:var(--text);font-family:monospace;"></textarea>
+      <div style="padding:12px 16px;background:var(--input-bg);border-top:1px solid var(--window-border);display:flex;gap:10px;">
+        <button class="nexa-btn" id="\${id}-save">💾 Save</button>
+        <button class="nexa-btn secondary" id="\${id}-saveas">Save As...</button>
+      </div>
+    </div>
+  \`;
+  
+  const editor = document.getElementById(id+'-editor');
+  const filenameEl = document.getElementById(id+'-filename');
+  
+  // Handle arguments (file passed from file manager)
+  if (arg && arg.filePath) {
+    currentFile = arg.filePath;
+    filenameEl.textContent = currentFile.split('/').pop();
+    editor.value = arg.content || "";
+  }
+  
+  // Save functionality
+  content.querySelector('#' + id + '-save').onclick = saveFile;
+  content.querySelector('#' + id + '-saveas').onclick = saveFileAs;
+  
+  function saveFile() {
+    if (!currentFile) {
+      saveFileAs();
+      return;
+    }
+    
+    const parts = currentFile.split('/');
+    const filename = parts.pop();
+    const path = parts.join('/') + '/';
+    
+    // Find the file in the file system
+    const folder = getFolder(path);
+    if (folder && folder.children[filename]) {
+      folder.children[filename].content = editor.value;
+      saveSys();
+      showNotification('File saved successfully', 'success');
+    } else {
+      showNotification('Error: File not found', 'error');
+    }
+  }
+  
+  function saveFileAs() {
+    showDialog({
+      title: "Save As",
+      msg: "Enter file name:",
+      input: true,
+      defaultValue: currentFile ? currentFile.split('/').pop() : "newfile.txt",
+      ok: "Save", 
+      cancel: "Cancel",
+      onok: (filename) => {
+        if (!filename) return;
+        
+        // Extract path and name
+        const parts = filename.split('/');
+        const name = parts.pop();
+        const path = parts.join('/') + '/';
+        
+        // Get or create folder
+        const folder = getFolder(path);
+        if (!folder) {
+          showNotification('Invalid path', 'error');
+          return;
+        }
+        
+        // Create/update file
+        folder.children[name] = {
+          type: "file",
+          content: editor.value
+        };
+        
+        currentFile = path + name;
+        filenameEl.textContent = name;
+        saveSys();
+        showNotification('File saved successfully', 'success');
+      }
+    });
+  }
+  
+  // Helper to get folder
+  function getFolder(path) {
+    const parts = path.split("/").filter(Boolean);
+    let cur = voxSys.fs["/"];
+    for (const p of parts) {
+      if (!cur.children[p]) {
+        // Create the folder if it doesn't exist
+        cur.children[p] = { type: "folder", children: {} };
+      }
+      cur = cur.children[p];
+    }
+    return cur;
+  }`
+});
+
+// --- Core OS Functions ---
+function saveSys() {
+  // Compress data to avoid quota issues
+  const data = JSON.stringify(voxSys);
+  try {
+    localStorage.setItem('voxSys', data);
+  } catch (e) {
+    if (e.name === 'QuotaExceededError') {
+      showNotification('Storage full! Some data may not be saved.', 'error');
+      // Clear old data to prevent lockout
+      localStorage.removeItem('voxSys');
+      localStorage.setItem('voxSys', JSON.stringify({
+        settings: voxSys.settings,
+        apps: voxSys.apps.filter(a => !a.deletable || a.id === "settings")
+      }));
+    }
+  }
+}
+
+function exportSys() {
+  const data = JSON.stringify(voxSys, null, 2);
+  const blob = new Blob([data], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = "voxos-export.json";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { 
+    URL.revokeObjectURL(url); 
+    a.remove(); 
+  }, 200);
+}
+
+function importSys() {
+  const input = document.createElement('input');
+  input.type = "file";
+  input.accept = ".json,application/json";
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        if (imported && imported.settings && imported.apps) {
+          localStorage.setItem('voxSys', JSON.stringify(imported));
+          location.reload();
+        } else {
+          showNotification("Invalid VoxOS export file", "error");
+        }
+      } catch(e) { 
+        showNotification("Error parsing file: " + e.message, "error");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function applyThemeAndFont() {
+  const s = voxSys.settings;
+  
+  // Apply theme classes
+  document.body.classList.remove('dark', 'light');
+  if (s.theme === 'light') {
+    document.body.classList.add('light');
+  } else if (s.theme === 'dark') {
+    document.body.classList.add('dark');
+  }
+  
+  // Apply accent color
+  document.documentElement.style.setProperty('--accent', s.accent);
+  
+  // Calculate darker and lighter shades
+  function shadeColor(color, percent) {
+    let R = parseInt(color.substring(1, 3), 16);
+    let G = parseInt(color.substring(3, 5), 16);
+    let B = parseInt(color.substring(5, 7), 16);
+
+    R = parseInt(R * (100 + percent) / 100);
+    G = parseInt(G * (100 + percent) / 100);
+    B = parseInt(B * (100 + percent) / 100);
+
+    R = (R < 255) ? R : 255;
+    G = (G < 255) ? G : 255;
+    B = (B < 255) ? B : 255;
+
+    const RR = ((R.toString(16).length === 1) ? "0" + R.toString(16) : R.toString(16));
+    const GG = ((G.toString(16).length === 1) ? "0" + G.toString(16) : G.toString(16));
+    const BB = ((B.toString(16).length === 1) ? "0" + B.toString(16) : B.toString(16));
+
+    return "#" + RR + GG + BB;
+  }
+  
+  document.documentElement.style.setProperty('--accent-dark', shadeColor(s.accent, -20));
+  document.documentElement.style.setProperty('--accent-light', shadeColor(s.accent, 40));
+  
+  // Apply font size
+  document.documentElement.style.fontSize = s.fontSize + 'em';
+  
+  // Apply wallpaper
+  const desktop = document.getElementById('desktop');
+  if (s.wallpaper) {
+    desktop.style.backgroundImage = `url(${s.wallpaper})`;
+    desktop.style.animation = 'none';
+  } else {
+    desktop.style.backgroundImage = '';
+    desktop.style.animation = 'voxwall 24s ease-in-out infinite';
+  }
+}
+
+function renderDesktop() {
+  const desktop = document.getElementById('desktop');
+  desktop.innerHTML = '';
+  
+  // Only show deletable apps on desktop
+  const desktopApps = voxSys.apps.filter(app => app.deletable !== false);
+  
+  let x = 24, y = 24;
+  desktopApps.forEach((app, index) => {
+    const col = Math.floor(index / 6);
+    const row = index % 6;
+    
+    const div = document.createElement('div');
+    div.className = 'desktop-icon';
+    div.style.left = (24 + (col * 110)) + 'px';
+    div.style.top = (24 + (row * 100)) + 'px';
+    div.innerHTML = `<div class="icon-img">${app.icon}</div><div class="icon-label">${app.title}</div>`;
+    div.onclick = () => openApp(app.id);
+    desktop.appendChild(div);
+  });
+}
+
+function renderStartMenu() {
+  const menu = document.getElementById('start-menu-apps');
+  menu.innerHTML = '';
+  
+  // Show all apps in start menu
+  voxSys.apps.forEach(app => {
+    const div = document.createElement('div');
+    div.className = 'menu-app';
+    div.innerHTML = `${app.icon} ${app.title}`;
+    div.onclick = () => { 
+      openApp(app.id); 
+      closeStartMenu(); 
+    };
+    menu.appendChild(div);
+  });
+}
+
+function renderTaskbar() {
+  const bar = document.getElementById('taskbar-apps');
+  bar.innerHTML = '';
+  
+  WindowManager.windows.forEach((w, i) => {
+    const meta = voxSys.apps.find(a => a.id === w.appId);
+    if (!meta) return;
+    
+    const btn = document.createElement('button');
+    btn.className = 'taskbar-app' + (i === WindowManager.windows.length - 1 ? ' active' : '');
+    btn.textContent = meta.icon + ' ' + meta.title;
+    btn.onclick = () => WindowManager.focus(w.id);
+    bar.appendChild(btn);
+  });
+}
+
+function updateSystemTime() {
+  const now = new Date();
+  const t = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('system-time').textContent = t;
+}
+
+const WindowManager = {
+  windows: [],
+  z: 10000,
+  
+  open(appId, arg) {
+    const meta = voxSys.apps.find(a => a.id === appId);
+    if (!meta) return;
+    
+    // Check for single instance
+    if (meta.singleInstance) {
+      const existing = this.windows.find(w => w.appId === appId);
+      if (existing) {
+        this.focus(existing.id);
+        return;
+      }
+    }
+    
+    const id = 'win-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+    const winDiv = document.createElement('div');
+    winDiv.className = 'window active';
+    winDiv.id = id;
+    winDiv.style.left = (100 + Math.random() * 100) + 'px';
+    winDiv.style.top = (60 + Math.random() * 80) + 'px';
+    winDiv.style.width = meta.width || '520px';
+    winDiv.style.height = meta.height || '360px';
+    
+    winDiv.innerHTML = `
+      <div class="window-header">
+        <span>${meta.icon} ${meta.title}</span>
+        <div class="window-controls">
+          <button class="window-control" title="Minimize">—</button>
+          <button class="window-control" title="Maximize">□</button>
+          <button class="window-control" title="Close">✕</button>
+        </div>
+      </div>
+      <div class="window-content" id="${id}-content"></div>
+      <div class="window-resizer"></div>
+    `;
+    
+    document.getElementById('windows-container').appendChild(winDiv);
+    this.windows.push({ id, appId, arg, winDiv });
+    this.z++;
+    winDiv.style.zIndex = this.z;
+    
+    setTimeout(() => winDiv.classList.add('active'), 10);
+    this.focus(id);
+    
+    try {
+      const renderFunc = new Function("id", "arg", "voxSys", "showNotification", "showDialog", meta.code);
+      renderFunc(id, arg, voxSys, showNotification, showDialog);
+    } catch(e) {
+      document.getElementById(id+'-content').innerHTML = `
+        <div style="padding:20px;color:var(--error);">
+          <h3>App Error</h3>
+          <pre>${e.toString()}</pre>
+        </div>
+      `;
+    }
+    
+    const [minBtn, maxBtn, closeBtn] = winDiv.querySelectorAll('.window-control');
+    minBtn.onclick = () => this.minimize(id);
+    maxBtn.onclick = () => this.maximize(id);
+    closeBtn.onclick = () => this.close(id);
+    
+    // Drag functionality
+    const header = winDiv.querySelector('.window-header');
+    let dragging = false, offset = { x: 0, y: 0 };
+    
+    header.onmousedown = function(e) {
+      dragging = true;
+      offset.x = e.clientX - winDiv.offsetLeft;
+      offset.y = e.clientY - winDiv.offsetTop;
+      WindowManager.z++;
+      winDiv.style.zIndex = WindowManager.z;
+      document.body.style.userSelect = 'none';
+      
+      document.onmousemove = function(e) {
+        if (!dragging) return;
+        winDiv.style.left = Math.max(0, Math.min(window.innerWidth - winDiv.offsetWidth, e.clientX - offset.x)) + 'px';
+        winDiv.style.top = Math.max(0, Math.min(window.innerHeight - winDiv.offsetHeight - 56, e.clientY - offset.y)) + 'px';
+      };
+      
+      document.onmouseup = () => { 
+        dragging = false; 
+        document.body.style.userSelect = ''; 
+        document.onmousemove = null; 
+        document.onmouseup = null; 
+      };
+    };
+    
+    // Resize functionality
+    const resizer = winDiv.querySelector('.window-resizer');
+    resizer.onmousedown = function(e) {
+      e.stopPropagation();
+      let resizing = true;
+      const start = { 
+        x: e.clientX, 
+        y: e.clientY, 
+        w: winDiv.offsetWidth, 
+        h: winDiv.offsetHeight 
+      };
+      
+      document.body.style.userSelect = 'none';
+      
+      document.onmousemove = function(e) {
+        if (!resizing) return;
+        winDiv.style.width = Math.max(320, start.w + e.clientX - start.x) + 'px';
+        winDiv.style.height = Math.max(180, start.h + e.clientY - start.y) + 'px';
+      };
+      
+      document.onmouseup = () => { 
+        resizing = false; 
+        document.body.style.userSelect = ''; 
+        document.onmousemove = null; 
+        document.onmouseup = null; 
+      };
+    };
+  },
+  
+  focus(id) {
+    this.windows.forEach(w => w.winDiv.classList.remove('active'));
+    const w = this.windows.find(w => w.id === id);
+    if (w) {
+      w.winDiv.classList.add('active');
+      this.z++;
+      w.winDiv.style.zIndex = this.z;
+    }
+    renderTaskbar();
+  },
+  
+  close(id) {
+    const idx = this.windows.findIndex(w => w.id === id);
+    if (idx >= 0) {
+      const w = this.windows[idx];
+      w.winDiv.remove();
+      this.windows.splice(idx, 1);
+      renderTaskbar();
+    }
+  },
+  
+  minimize(id) {
+    const w = this.windows.find(w => w.id === id);
+    if (w) w.winDiv.classList.remove('active');
+  },
+  
+  maximize(id) {
+    const w = this.windows.find(w => w.id === id);
+    if (!w) return;
+    
+    const isFullscreen = w.winDiv.getAttribute('fullscreen') === 'true';
+    w.winDiv.setAttribute('fullscreen', (!isFullscreen).toString());
+    
+    if (!isFullscreen) {
+      w.winDiv.style.left = '0';
+      w.winDiv.style.top = '0';
+      w.winDiv.style.width = '100vw';
+      w.winDiv.style.height = 'calc(100vh - var(--taskbar-height))';
+      w.winDiv.style.borderRadius = '0';
+      w.winDiv.style.margin = '0';
+    } else {
+      const meta = voxSys.apps.find(a => a.id === w.appId);
+      w.winDiv.style.left = (100 + Math.random() * 100) + 'px';
+      w.winDiv.style.top = (60 + Math.random() * 80) + 'px';
+      w.winDiv.style.width = meta.width || '520px';
+      w.winDiv.style.height = meta.height || '360px';
+      w.winDiv.style.borderRadius = 'var(--radius)';
+    }
+  }
+};
+
+function openApp(appId, arg) { 
+  WindowManager.open(appId, arg); 
+}
+
+function closeStartMenu() { 
+  document.getElementById('start-menu').classList.remove('active'); 
+}
+
+function toggleStartMenu() { 
+  document.getElementById('start-menu').classList.toggle('active'); 
+}
+
+function showLockScreen() {
+  document.getElementById('lockscreen').style.display = 'flex';
+  document.getElementById('desktop').style.filter = "blur(18px) brightness(0.7)";
+  document.getElementById('windows-container').style.filter = "blur(18px) brightness(0.7)";
+  document.querySelector('.taskbar').style.filter = "blur(18px) brightness(0.7)";
+  document.getElementById('start-menu').style.display = "none";
+  document.getElementById('lock-error').textContent = '';
+  document.getElementById('lock-pin').value = '';
+  setTimeout(() => document.getElementById('lock-pin').focus(), 200);
+}
+
+function hideLockScreen() {
+  document.getElementById('lockscreen').style.display = 'none';
+  document.getElementById('desktop').style.filter = "";
+  document.getElementById('windows-container').style.filter = "";
+  document.querySelector('.taskbar').style.filter = "";
+}
+
+function updateLockClock() {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const hh = (h < 10 ? '0' : '') + h, mm = (m < 10 ? '0' : '') + m;
+  document.getElementById('lock-time').textContent = hh + ':' + mm;
+  document.getElementById('lock-date').textContent = now.toLocaleDateString(undefined, {
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric'
+  });
+}
+
+function showNotification(msg, type = 'info', time = 3000) {
+  const box = document.getElementById('notification');
+  box.textContent = msg;
+  box.className = '';
+  box.classList.add(type);
+  box.classList.add('active');
+  
+  setTimeout(() => {
+    box.classList.remove('active');
+  }, time);
+}
+
+function showDialog({title, msg, input, inputType, defaultValue, ok, cancel, onok, oncancel}) {
+  const dialog = document.getElementById('dialog');
+  const box = dialog.querySelector('.dialog-box');
+  
+  let html = '';
+  if (title) html += `<div class="dialog-header">${title}</div>`;
+  
+  html += '<div class="dialog-content">';
+  if (msg) html += `<p>${msg}</p>`;
+  
+  if (input) {
+    if (inputType === 'textarea') {
+      html += `<textarea id="dialog-input" class="nexa-input" style="height:150px;">${defaultValue || ''}</textarea>`;
+    } else {
+      html += `<input type="${inputType || 'text'}" id="dialog-input" class="nexa-input" value="${defaultValue || ''}">`;
+    }
+  }
+  html += '</div>';
+  
+  html += '<div class="dialog-actions">';
+  if (cancel) html += `<button class="nexa-btn secondary" id="dialog-cancel">${cancel}</button>`;
+  if (ok) html += `<button class="nexa-btn" id="dialog-ok">${ok}</button>`;
+  html += '</div>';
+  
+  box.innerHTML = html;
+  dialog.style.display = 'flex';
+  
+  if (ok) {
+    box.querySelector('#dialog-ok').onclick = () => {
+      dialog.style.display = 'none';
+      if (onok) {
+        const inputElem = box.querySelector('#dialog-input');
+        onok(inputElem ? inputElem.value : null);
+      }
+    };
+  }
+  
+  if (cancel) {
+    box.querySelector('#dialog-cancel').onclick = () => {
+      dialog.style.display = 'none';
+      if (oncancel) oncancel();
+    };
+  }
+  
+  // Focus input if exists
+  const inputElem = box.querySelector('#dialog-input');
+  if (inputElem) {
+    setTimeout(() => {
+      inputElem.focus();
+      if (inputType !== 'textarea') inputElem.select();
+    }, 10);
+  }
+}
+
+// Initialize the OS
+window.onload = () => {
+  // Load saved state
+  const stored = localStorage.getItem('voxSys');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      Object.assign(voxSys.settings, parsed.settings || {});
+      
+      // Merge system apps with user apps
+      const sysApps = voxSys.apps.filter(a => a.deletable === false);
+      const userApps = (parsed.apps || []).filter(a => a.deletable !== false);
+      voxSys.apps = [...sysApps, ...userApps];
+      
+      voxSys.fs = parsed.fs || voxSys.fs;
+      voxSys.fileAssociations = parsed.fileAssociations || {};
+    } catch(e) {
+      console.error('Error loading state:', e);
+    }
+  }
+  
+  // Initialize UI
+  renderDesktop();
+  renderStartMenu();
+  renderTaskbar();
+  updateSystemTime();
+  setInterval(updateSystemTime, 1000);
+  setInterval(updateLockClock, 30000);
+  applyThemeAndFont();
+  
+  // Event listeners
+  document.getElementById('desktop').onclick = closeStartMenu;
+  document.getElementById('start-btn').onclick = (e) => { 
+    e.stopPropagation(); 
+    toggleStartMenu(); 
+  };
+  
+  document.getElementById('tray-theme').onclick = () => { 
+    openApp('settings'); 
+  };
+  
+  document.onkeydown = function(e) {
+    if (e.key === 'Escape') closeStartMenu();
+    if (e.key === 'F11') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    }
+  };
+  
+  document.getElementById('signout-btn').onclick = () => {
+    showLockScreen();
+    closeStartMenu();
+    updateLockClock();
+  };
+  
+  document.getElementById('lock-form').onsubmit = function(e) {
+    e.preventDefault();
+    const pin = document.getElementById('lock-pin').value;
+    if (pin === voxSys.settings.lockPIN) {
+      hideLockScreen();
+    } else {
+      document.getElementById('lock-error').textContent = 'Incorrect PIN!';
+    }
+  };
+  
+  // Initial clock update
+  updateLockClock();
+  
+  // Set file associations
+  voxSys.fileAssociations = {
+    "txt": "text-editor",
+    "js": "text-editor",
+    "html": "text-editor",
+    "css": "text-editor",
+    "json": "text-editor",
+    "vox": "app-maker"
+  };
+  
+  // Start menu fix - reattach event listeners
+  document.querySelectorAll('#start-menu-apps .menu-app').forEach(item => {
+    item.onclick = () => {
+      const appId = voxSys.apps.find(a => a.title === item.textContent.trim().split(' ').slice(1).join(' '))?.id;
+      if (appId) {
+        openApp(appId);
+        closeStartMenu();
+      }
+    };
+  });
+};
+</script>
 </body>
 </html>
